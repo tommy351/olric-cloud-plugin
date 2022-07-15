@@ -41,12 +41,12 @@ func (c *CloudDiscovery) checkErrors() error {
 	if c.log == nil {
 		return fmt.Errorf("logger cannot be nil")
 	}
-	if c.config.Provider != "k8s" {
-		_, ok := discover.Providers[c.config.Provider]
-		if !ok {
-			return fmt.Errorf("invalid provider: %s", c.config.Provider)
-		}
+
+	_, ok := discover.Providers[c.config.Provider]
+	if !ok {
+		return fmt.Errorf("invalid provider: %s", c.config.Provider)
 	}
+
 	return nil
 }
 
