@@ -23,6 +23,17 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
+var providers = map[string]discover.Provider{}
+
+func init() {
+	for k, v := range discover.Providers {
+		providers[k] = v
+	}
+
+	providers["k8s"] = &k8s.Provider{}
+	providers["dns"] = &DNSProvider{}
+}
+
 type CloudDiscovery struct {
 	config   *Config
 	log      *log.Logger
@@ -42,7 +53,7 @@ func (c *CloudDiscovery) checkErrors() error {
 		return fmt.Errorf("logger cannot be nil")
 	}
 
-	_, ok := discover.Providers[c.config.Provider]
+	_, ok := providers[c.config.Provider]
 	if !ok {
 		return fmt.Errorf("invalid provider: %s", c.config.Provider)
 	}
@@ -55,19 +66,11 @@ func (c *CloudDiscovery) Initialize() error {
 		return err
 	}
 
-	m := map[string]discover.Provider{}
-	if c.config.Provider == "k8s" {
-		m[c.config.Provider] = &k8s.Provider{}
-	} else {
-		provider, _ := discover.Providers[c.config.Provider]
-		m[c.config.Provider] = provider
-	}
-
-	opt := discover.WithProviders(m)
-	d, err := discover.New(opt)
+	d, err := discover.New(discover.WithProviders(providers))
 	if err != nil {
 		return fmt.Errorf("discover.New returned an error: %w", err)
 	}
+
 	c.discover = d
 	c.log.Printf("[INFO] Service discovery plugin is enabled, provider: %s", c.config.Provider)
 	return nil
